@@ -39,6 +39,8 @@
     <button onclick="injectPulse()">Inyectar Pulso</button>
     <button onclick="injectWow()">Inyectar Wow!</button>
     <button onclick="resetField()">Resetear Campo</button>
+    <button onclick="saveField()">💾 Guardar Estado</button>
+    <button onclick="loadField()">📂 Cargar Estado</button>
   </div>
   <div id="info"></div>
 
@@ -123,6 +125,39 @@
       const avg = values.reduce((a, b) => a + b, 0) / values.length;
       const varianza = values.reduce((a, b) => a + (b - avg) ** 2, 0) / values.length;
       document.getElementById('info').textContent = `📊 Varianza: ${varianza.toFixed(6)}`;
+    }
+
+    function saveField() {
+      const dataStr = JSON.stringify(field);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "nfield_estado.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function loadField() {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".json";
+      input.onchange = (event) => {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const data = JSON.parse(reader.result);
+            if (Array.isArray(data) && data.length === dim) {
+              field = data;
+            }
+          } catch (e) {
+            alert("Error al cargar el archivo");
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
     }
 
     function loop() {
