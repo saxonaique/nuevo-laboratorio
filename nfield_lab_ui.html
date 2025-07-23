@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Laboratorio Motor N - HTML</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 1rem;
+    }
+    canvas {
+      border: 2px solid #94a3b8;
+      margin-bottom: 1rem;
+    }
+    button {
+      margin: 0.25rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      border: none;
+      background-color: #0ea5e9;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #info {
+      margin-top: 1rem;
+      font-size: 1rem;
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Laboratorio del Motor N</h1>
+  <canvas id="canvas" width="500" height="500"></canvas>
+  <div>
+    <button onclick="injectPulse()">Inyectar Pulso</button>
+    <button onclick="injectWow()">Inyectar Wow!</button>
+    <button onclick="resetField()">Resetear Campo</button>
+  </div>
+  <div id="info"></div>
+
+  <script>
+    const dim = 50;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const cellSize = canvas.width / dim;
+    let field = [];
+
+    function resetField() {
+      field = [];
+      for (let r = 0; r < dim; r++) {
+        field[r] = [];
+        for (let c = 0; c < dim; c++) {
+          field[r][c] = 0.4 + Math.random() * 0.2;
+        }
+      }
+    }
+
+    function drawField() {
+      for (let r = 0; r < dim; r++) {
+        for (let c = 0; c < dim; c++) {
+          const v = Math.floor(field[r][c] * 255);
+          ctx.fillStyle = `rgb(${v},${v},${v})`;
+          ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
+    function diffuseStep(alpha = 0.05) {
+      const next = JSON.parse(JSON.stringify(field));
+      for (let r = 0; r < dim; r++) {
+        for (let c = 0; c < dim; c++) {
+          let sum = 0, count = 0;
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              const nr = r + dr, nc = c + dc;
+              if (nr >= 0 && nr < dim && nc >= 0 && nc < dim) {
+                sum += field[nr][nc];
+                count++;
+              }
+            }
+          }
+          const avg = sum / count;
+          next[r][c] += alpha * (avg - field[r][c]);
+        }
+      }
+      field = next;
+    }
+
+    function injectPattern(pattern, offsetX, offsetY) {
+      for (let r = 0; r < pattern.length; r++) {
+        for (let c = 0; c < pattern[0].length; c++) {
+          const rr = offsetY + r;
+          const cc = offsetX + c;
+          if (rr >= 0 && rr < dim && cc >= 0 && cc < dim) {
+            field[rr][cc] = pattern[r][c];
+          }
+        }
+      }
+    }
+
+    function injectPulse() {
+      const pulse = Array(5).fill().map(() => Array(5).fill(1.0));
+      injectPattern(pulse, 22, 22);
+    }
+
+    function injectWow() {
+      const wow = [
+        [0, 0.8, 0, 0.8, 0],
+        [0.8, 0, 0.8, 0, 0.8],
+        [0, 0.8, 1.0, 0.8, 0],
+        [0.8, 0, 0.8, 0, 0.8],
+        [0, 0.8, 0, 0.8, 0]
+      ];
+      injectPattern(wow, 22, 22);
+    }
+
+    function updateInfo() {
+      const values = field.flat();
+      const avg = values.reduce((a, b) => a + b, 0) / values.length;
+      const varianza = values.reduce((a, b) => a + (b - avg) ** 2, 0) / values.length;
+      document.getElementById('info').textContent = `📊 Varianza: ${varianza.toFixed(6)}`;
+    }
+
+    function loop() {
+      diffuseStep();
+      drawField();
+      updateInfo();
+      requestAnimationFrame(loop);
+    }
+
+    resetField();
+    loop();
+  </script>
+</body>
+</html>
