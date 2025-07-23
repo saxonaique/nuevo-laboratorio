@@ -39,10 +39,11 @@
   <div>
     <button onclick="injectPulse()">Inyectar Pulso</button>
     <button onclick="injectVortex()">Inyectar Vórtice</button>
+    <button onclick="injectRadialField()">🌌 Inyectar Campo Radial</button>
     <button onclick="resetField()">Resetear Campo</button>
     <button onclick="saveField()">💾 Guardar Estado</button>
     <button onclick="loadField()">📂 Cargar Estado</button>
-  <button onclick="injectRadialField()">🌌 Inyectar Campo Radial</button>
+    <button onclick="toggleEntropy()">🔀 Alternar Entropía</button>
   </div>
   <div id="info"></div>
 
@@ -52,6 +53,7 @@
     const ctx = canvas.getContext('2d');
     const cellSize = canvas.width / dim;
     let field = [];
+    let showEntropy = false;
 
     function resetField() {
       field = [];
@@ -152,6 +154,20 @@
       injectPattern(vortex, 22, 22);
     }
 
+    function injectRadialField(strength = 0.1) {
+      const cx = dim / 2;
+      const cy = dim / 2;
+      for (let r = 0; r < dim; r++) {
+        for (let c = 0; c < dim; c++) {
+          const dx = c - cx;
+          const dy = r - cy;
+          const dist = Math.sqrt(dx * dx + dy * dy) + 1e-6;
+          field[r][c].x += (dx / dist) * strength;
+          field[r][c].y += (dy / dist) * strength;
+        }
+      }
+    }
+
     function injectPattern(pattern, offsetX, offsetY) {
       for (let r = 0; r < pattern.length; r++) {
         for (let c = 0; c < pattern[0].length; c++) {
@@ -160,6 +176,40 @@
           if (rr >= 0 && rr < dim && cc >= 0 && cc < dim) {
             field[rr][cc] = { ...pattern[r][c] };
           }
+        }
+      }
+    }
+
+    function calcularEntropiaLocal(r, c) {
+      const base = field[r][c];
+      let variacion = 0;
+      let count = 0;
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          const nr = r + dr;
+          const nc = c + dc;
+          if (nr >= 0 && nr < dim && nc >= 0 && nc < dim && (dr !== 0 || dc !== 0)) {
+            const vecino = field[nr][nc];
+            const dx = base.x - vecino.x;
+            const dy = base.y - vecino.y;
+            variacion += dx * dx + dy * dy;
+            count++;
+          }
+        }
+      }
+      return variacion / count;
+    }
+
+    function drawEntropyMap() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let r = 0; r < dim; r++) {
+        for (let c = 0; c < dim; c++) {
+          const entropy = calcularEntropiaLocal(r, c);
+          const norm = Math.min(entropy * 50, 1);
+          const red = Math.floor(255 * norm);
+          const blue = 255 - red;
+          ctx.fillStyle = `rgba(${red}, 0, ${blue}, 0.6)`;
+          ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
         }
       }
     }
@@ -199,14 +249,20 @@
             const data = JSON.parse(reader.result);
             if (Array.isArray(data) && data.length === dim) {
               field = data;
+            } else {
+              alert("El archivo no tiene el formato correcto.");
             }
           } catch (e) {
-            alert("Error al cargar el archivo");
+            alert("Error al cargar el archivo: " + e.message);
           }
         };
         reader.readAsText(file);
       };
       input.click();
+    }
+
+    function toggleEntropy() {
+      showEntropy = !showEntropy;
     }
 
     canvas.addEventListener("click", (e) => {
@@ -221,45 +277,18 @@
     });
 
     function loop() {
-  time += 1;
-  diffuseStep();
-  applyWave(time);
-  drawField();
-  updateInfo();
-  requestAnimationFrame(loop);
+      diffuseStep();
+      if (showEntropy) {
+        drawEntropyMap();
+      } else {
+        drawField();
+      }
+      updateInfo();
+      requestAnimationFrame(loop);
     }
 
-    let time = 0;
-resetField();
-loop();
-  function applyWave(time) {
-  const freq = 0.15;
-  for (let r = 0; r < dim; r++) {
-    for (let c = 0; c < dim; c++) {
-      const dx = c - dim / 2;
-      const dy = r - dim / 2;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const amp = Math.sin(dist * freq - time * 0.1);
-      field[r][c].x += 0.01 * amp;
-      field[r][c].y += 0.01 * amp;
-    }
-  }
-}
-
-function injectRadialField(strength = 0.1) {
-  const cx = dim / 2;
-  const cy = dim / 2;
-  for (let r = 0; r < dim; r++) {
-    for (let c = 0; c < dim; c++) {
-      const dx = c - cx;
-      const dy = r - cy;
-      const dist = Math.sqrt(dx * dx + dy * dy) + 1e-6;
-      field[r][c].x += (dx / dist) * strength;
-      field[r][c].y += (dy / dist) * strength;
-    }
-  }
-}
-
-</script>
+    resetField();
+    loop();
+  </script>
 </body>
 </html>

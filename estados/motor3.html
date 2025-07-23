@@ -1,0 +1,50 @@
+function calcularEntropiaLocal(r, c) {
+    const base = field[r][c];
+    let variacion = 0;
+    let count = 0;
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        const nr = r + dr;
+        const nc = c + dc;
+        if (nr >= 0 && nr < dim && nc >= 0 && nc < dim && (dr !== 0 || dc !== 0)) {
+          const vecino = field[nr][nc];
+          const dx = base.x - vecino.x;
+          const dy = base.y - vecino.y;
+          variacion += dx * dx + dy * dy;
+          count++;
+        }
+      }
+    }
+    const avgVar = variacion / count;
+    // Aplicar una raíz para suavizar diferencias y aumentar rango perceptual
+    return Math.sqrt(avgVar);
+  }
+  
+  function drawEntropyMap() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Para mejorar contraste, primero calculamos entropías y hallamos máximo
+    let maxEntropy = 0;
+    const entropies = [];
+    for (let r = 0; r < dim; r++) {
+      entropies[r] = [];
+      for (let c = 0; c < dim; c++) {
+        const e = calcularEntropiaLocal(r, c);
+        entropies[r][c] = e;
+        if (e > maxEntropy) maxEntropy = e;
+      }
+    }
+  
+    for (let r = 0; r < dim; r++) {
+      for (let c = 0; c < dim; c++) {
+        let norm = entropies[r][c] / maxEntropy;
+        norm = Math.min(1, norm);
+        // Escala de color: azul (bajo) a rojo (alto), con mayor saturación
+        const red = Math.floor(255 * norm);
+        const green = 50;
+        const blue = Math.floor(255 * (1 - norm));
+        ctx.fillStyle = `rgba(${red}, ${green}, ${blue}, 0.8)`;
+        ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+      }
+    }
+  }
+  
