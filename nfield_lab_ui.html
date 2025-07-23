@@ -41,16 +41,25 @@
     <button onclick="resetField()">Resetear Campo</button>
     <button onclick="saveField()">💾 Guardar Estado</button>
     <button onclick="loadField()">📂 Cargar Estado</button>
+    <button onclick="toggleRunning()" id="pauseBtn">⏸️ Pausar</button>
+    <label style="margin-left:1rem;">Difusión α: <input type="range" id="alphaSlider" min="0" max="0.2" step="0.005" value="0.05" style="vertical-align:middle;width:100px;" oninput="updateAlphaLabel()"><span id="alphaValue">0.05</span></label>
+    <label style="margin-left:1rem;">FPS: <input type="range" id="fpsSlider" min="5" max="60" step="1" value="30" style="vertical-align:middle;width:80px;" oninput="updateFpsLabel()"><span id="fpsValue">30</span></label>
   </div>
   <div id="info"></div>
 
   <script>
+    // --- Parámetros globales y estado ---
     const dim = 50;
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const cellSize = canvas.width / dim;
     let field = [];
+    let running = true;
+    let alpha = 0.05;
+    let fps = 30;
+    let lastFrame = 0;
 
+    // --- Inicialización de campo ---
     function resetField() {
       field = [];
       for (let r = 0; r < dim; r++) {
@@ -59,22 +68,64 @@
           field[r][c] = 0.4 + Math.random() * 0.2;
         }
       }
+      drawField();
+      updateInfo();
+    }
+
+    // --- Visualización con gradiente de color ---
+    function valueToColor(value) {
+      // Azul (bajo) → Verde → Amarillo → Rojo (alto)
+      const stops = [
+        {v: 0.0, c: [36, 99, 235]}, // azul
+        {v: 0.5, c: [34, 197, 94]}, // verde
+        {v: 0.8, c: [253, 224, 71]}, // amarillo
+        {v: 1.0, c: [239, 68, 68]}, // rojo
+      ];
+      for (let i = 1; i < stops.length; i++) {
+        if (value <= stops[i].v) {
+          const t = (value - stops[i-1].v) / (stops[i].v - stops[i-1].v);
+          const c0 = stops[i-1].c, c1 = stops[i].c;
+          const r = Math.round(c0[0] + t * (c1[0] - c0[0]));
+          const g = Math.round(c0[1] + t * (c1[1] - c0[1]));
+          const b = Math.round(c0[2] + t * (c1[2] - c0[2]));
+          return `rgb(${r},${g},${b})`;
+        }
+      }
+      return `rgb(239,68,68)`;
     }
 
     function drawField() {
       for (let r = 0; r < dim; r++) {
         for (let c = 0; c < dim; c++) {
-          const v = Math.floor(field[r][c] * 255);
-          ctx.fillStyle = `rgb(${v},${v},${v})`;
+          const value = field[r][c];
+          const grad = calculateGradient(r, c);
+          const v = Math.floor(value * 255);
+          // Resalta gradientes altos en rojo semitransparente
+          if (grad > 0.01) {
+            ctx.fillStyle = `rgba(255, 60, 60, 0.35)`;
+          } else {
+            ctx.fillStyle = `rgb(${v},${v},${v})`;
+          }
           ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
         }
       }
     }
 
-    function diffuseStep(alpha = 0.05) {
-      const next = JSON.parse(JSON.stringify(field));
+    function calculateGradient(r, c) {
+      const val = field[r][c];
+      let dx = 0, dy = 0;
+      if (c > 0 && c < dim - 1) dx = (field[r][c + 1] - field[r][c - 1]) / 2;
+      if (r > 0 && r < dim - 1) dy = (field[r + 1][c] - field[r - 1][c]) / 2;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // --- Difusión optimizada (solo celdas internas, menos copias) ---
+    function diffuseStep() {
+      const next = [];
       for (let r = 0; r < dim; r++) {
+        next[r] = [];
         for (let c = 0; c < dim; c++) {
+          // Solo promedia vecinos válidos (evita frontera innecesaria)
           let sum = 0, count = 0;
           for (let dr = -1; dr <= 1; dr++) {
             for (let dc = -1; dc <= 1; dc++) {
@@ -86,7 +137,7 @@
             }
           }
           const avg = sum / count;
-          next[r][c] += alpha * (avg - field[r][c]);
+          next[r][c] = field[r][c] + alpha * (avg - field[r][c]);
         }
       }
       field = next;
@@ -120,11 +171,12 @@
       injectPattern(wow, 22, 22);
     }
 
+    // --- Estadísticas: media y varianza ---
     function updateInfo() {
       const values = field.flat();
       const avg = values.reduce((a, b) => a + b, 0) / values.length;
       const varianza = values.reduce((a, b) => a + (b - avg) ** 2, 0) / values.length;
-      document.getElementById('info').textContent = `📊 Varianza: ${varianza.toFixed(6)}`;
+      document.getElementById('info').textContent = `📊 Media: ${avg.toFixed(4)} | Varianza: ${varianza.toFixed(6)} | α: ${alpha} | FPS: ${fps}`;
     }
 
     function saveField() {
@@ -160,15 +212,38 @@
       input.click();
     }
 
-    function loop() {
-      diffuseStep();
-      drawField();
-      updateInfo();
+    // --- Control de animación (pausa/reanudar, control de FPS) ---
+    function loop(ts) {
+      if (!lastFrame) lastFrame = ts;
+      const elapsed = ts - lastFrame;
+      if (running && elapsed > 1000 / fps) {
+        diffuseStep();
+        drawField();
+        updateInfo();
+        lastFrame = ts;
+      }
       requestAnimationFrame(loop);
     }
 
+    function toggleRunning() {
+      running = !running;
+      document.getElementById('pauseBtn').textContent = running ? '⏸️ Pausar' : '▶️ Reanudar';
+    }
+
+    function updateAlphaLabel() {
+      alpha = parseFloat(document.getElementById('alphaSlider').value);
+      document.getElementById('alphaValue').textContent = alpha;
+    }
+    function updateFpsLabel() {
+      fps = parseInt(document.getElementById('fpsSlider').value);
+      document.getElementById('fpsValue').textContent = fps;
+    }
+
+    // --- Inicialización ---
     resetField();
-    loop();
+    updateAlphaLabel();
+    updateFpsLabel();
+    requestAnimationFrame(loop);
   </script>
 </body>
 </html>

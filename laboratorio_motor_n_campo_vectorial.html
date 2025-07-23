@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Laboratorio2</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 1rem;
+    }
+    canvas {
+      border: 2px solid #94a3b8;
+      margin-bottom: 1rem;
+      background: #1e293b;
+    }
+    button {
+      margin: 0.25rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      border: none;
+      background-color: #0ea5e9;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #info {
+      margin-top: 1rem;
+      font-size: 1rem;
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Laboratorio2</h1>
+  <canvas id="canvas" width="500" height="500"></canvas>
+  <div>
+    <button onclick="injectPulse()">Inyectar Pulso</button>
+    <button onclick="injectVortex()">Inyectar Vórtice</button>
+    <button onclick="resetField()">Resetear Campo</button>
+    <button onclick="saveField()">💾 Guardar Estado</button>
+    <button onclick="loadField()">📂 Cargar Estado</button>
+  </div>
+  <div id="info"></div>
+
+  <script>
+    const dim = 50;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const cellSize = canvas.width / dim;
+    let field = [];
+
+    function resetField() {
+      field = [];
+      for (let r = 0; r < dim; r++) {
+        field[r] = [];
+        for (let c = 0; c < dim; c++) {
+          field[r][c] = { x: (Math.random() - 0.5) * 0.2, y: (Math.random() - 0.5) * 0.2 };
+        }
+      }
+    }
+
+    function drawArrow(x, y, vx, vy) {
+      const len = Math.sqrt(vx * vx + vy * vy);
+      if (len < 0.01) return;
+
+      const maxLen = cellSize * 0.4;
+      const scale = maxLen / len;
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(vx * scale, vy * scale);
+      ctx.stroke();
+
+      ctx.beginPath();
+      const angle = Math.atan2(vy, vx);
+      const headLen = 5;
+      ctx.moveTo(vx * scale, vy * scale);
+      ctx.lineTo(vx * scale - headLen * Math.cos(angle - Math.PI / 6), vy * scale - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(vx * scale - headLen * Math.cos(angle + Math.PI / 6), vy * scale - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.lineTo(vx * scale, vy * scale);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawField() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let r = 0; r < dim; r++) {
+        for (let c = 0; c < dim; c++) {
+          const { x: vx, y: vy } = field[r][c];
+          const centerX = c * cellSize + cellSize / 2;
+          const centerY = r * cellSize + cellSize / 2;
+          drawArrow(centerX, centerY, vx, vy);
+        }
+      }
+    }
+
+    function diffuseStep(alpha = 0.1) {
+      const next = JSON.parse(JSON.stringify(field));
+      for (let r = 0; r < dim; r++) {
+        for (let c = 0; c < dim; c++) {
+          let sumX = 0, sumY = 0, count = 0;
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              const nr = r + dr;
+              const nc = c + dc;
+              if (nr >= 0 && nr < dim && nc >= 0 && nc < dim) {
+                sumX += field[nr][nc].x;
+                sumY += field[nr][nc].y;
+                count++;
+              }
+            }
+          }
+          const avgX = sumX / count;
+          const avgY = sumY / count;
+
+          next[r][c].x += alpha * (avgX - field[r][c].x);
+          next[r][c].y += alpha * (avgY - field[r][c].y);
+        }
+      }
+      field = next;
+    }
+
+    function injectPulse() {
+      const pulse = [];
+      for (let i = 0; i < 5; i++) {
+        pulse[i] = [];
+        for (let j = 0; j < 5; j++) {
+          pulse[i][j] = { x: 1.0, y: 0 };
+        }
+      }
+      injectPattern(pulse, 22, 22);
+    }
+
+    function injectVortex() {
+      const vortex = [
+        [{x:0, y:1},{x:0.5, y:0.5},{x:1, y:0},{x:0.5, y:-0.5},{x:0, y:-1}],
+        [{x:-0.5, y:0.5},{x:0, y:1},{x:1, y:0},{x:0, y:-1},{x:0.5, y:-0.5}],
+        [{x:-1, y:0},{x:-1, y:0},{x:0, y:0},{x:1, y:0},{x:1, y:0}],
+        [{x:-0.5, y:-0.5},{x:0, y:-1},{x:-1, y:0},{x:0, y:1},{x:0.5, y:0.5}],
+        [{x:0, y:-1},{x:-0.5, y:-0.5},{x:-1, y:0},{x:-0.5, y:0.5},{x:0, y:1}],
+      ];
+      injectPattern(vortex, 22, 22);
+    }
+
+    function injectPattern(pattern, offsetX, offsetY) {
+      for (let r = 0; r < pattern.length; r++) {
+        for (let c = 0; c < pattern[0].length; c++) {
+          const rr = offsetY + r;
+          const cc = offsetX + c;
+          if (rr >= 0 && rr < dim && cc >= 0 && cc < dim) {
+            field[rr][cc] = { ...pattern[r][c] };
+          }
+        }
+      }
+    }
+
+    function updateInfo() {
+      let totalMag = 0;
+      for (let r = 0; r < dim; r++) {
+        for (let c = 0; c < dim; c++) {
+          const { x, y } = field[r][c];
+          totalMag += Math.sqrt(x * x + y * y);
+        }
+      }
+      const avgMag = totalMag / (dim * dim);
+      document.getElementById('info').textContent = `📊 Magnitud Promedio: ${avgMag.toFixed(4)}`;
+    }
+
+    function saveField() {
+      const dataStr = JSON.stringify(field);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "nfield_vectorial.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function loadField() {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".json";
+      input.onchange = (event) => {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const data = JSON.parse(reader.result);
+            if (Array.isArray(data) && data.length === dim) {
+              field = data;
+            }
+          } catch (e) {
+            alert("Error al cargar el archivo");
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    canvas.addEventListener("click", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const c = Math.floor(x / cellSize);
+      const r = Math.floor(y / cellSize);
+      if (r >= 0 && r < dim && c >= 0 && c < dim) {
+        field[r][c] = { x: 0, y: -1 };
+      }
+    });
+
+    function loop() {
+      diffuseStep();
+      drawField();
+      updateInfo();
+      requestAnimationFrame(loop);
+    }
+
+    resetField();
+    loop();
+  </script>
+</body>
+</html>
