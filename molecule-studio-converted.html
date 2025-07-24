@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Molecule Studio - Converted</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8f9fa;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+        
+        .input-container {
+            position: relative;
+        }
+        
+        .input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.2s;
+        }
+        
+        .input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .button {
+            padding: 12px 24px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .button:hover {
+            background: #2563eb;
+        }
+        
+        .button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            margin-top: 4px;
+        }
+        
+        .suggestion-item {
+            width: 100%;
+            text-align: left;
+            padding: 12px 16px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+        
+        .suggestion-item:hover {
+            background: #f9fafb;
+        }
+        
+        .viewer {
+            flex: 1;
+            position: relative;
+        }
+        
+        .viewer-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .empty-state {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #6b7280;
+        }
+        
+        .loading-state {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(248, 249, 250, 0.75);
+        }
+        
+        .controls-info {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .error {
+            margin-top: 12px;
+            padding: 12px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            color: #dc2626;
+            font-size: 14px;
+        }
+        
+        .molecule-info {
+            margin-top: 12px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .toggle-button {
+            padding: 8px 16px;
+            background: #f59e0b;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-bottom: 16px;
+        }
+        
+        .debug-textarea {
+            width: 100%;
+            height: 192px;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        .button-secondary {
+            padding: 8px 16px;
+            background: #e5e7eb;
+            color: #374151;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h1 class="title">Molecule Studio</h1>
+            <p class="subtitle">Visualize molecular structures in 3D</p>
+            
+            <button id="debugToggle" class="toggle-button">Toggle Debug Mode</button>
+            
+            <div id="normalMode">
+                <div class="form-group">
+                    <label class="label">Molecule Name</label>
+                    <div class="input-container">
+                        <input 
+                            type="text" 
+                            id="moleculeInput" 
+                            class="input" 
+                            placeholder="Enter molecule name (e.g., water, methane, caffeine)"
+                        >
+                        <div id="suggestions" class="suggestions" style="display: none;">
+                            <div class="suggestion-header" style="padding: 8px 16px; font-size: 12px; color: #6b7280; font-weight: 500;">
+                                Suggested molecules:
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="submitBtn" class="button">Generate Molecule</button>
+            </div>
+            
+            <div id="debugMode" style="display: none;">
+                <div style="margin-bottom: 12px; font-size: 14px; color: #f59e0b;">
+                    <strong>Debug Mode:</strong> Enter raw molecular JSON data below
+                </div>
+                <textarea 
+                    id="debugJson" 
+                    class="debug-textarea" 
+                    placeholder="Enter molecular JSON data..."
+                ></textarea>
+                <div class="button-group">
+                    <button id="debugSubmit" class="button">Render JSON</button>
+                    <button id="debugClear" class="button-secondary">Clear</button>
+                </div>
+            </div>
+            
+            <div id="error" class="error" style="display: none;"></div>
+            <div id="moleculeInfo" class="molecule-info" style="display: none;"></div>
+        </div>
+        
+        <!-- 3D Viewer -->
+        <div class="viewer">
+            <div id="viewer" class="viewer-canvas"></div>
+            
+            <div id="emptyState" class="empty-state">
+                <div>
+                    <div style="font-size: 64px; margin-bottom: 16px;">⚛️</div>
+                    <p style="font-size: 20px; font-weight: 300;">Enter a molecule name to begin</p>
+                    <p style="font-size: 14px; margin-top: 8px;">Try: water, methane, caffeine, aspirin, glucose</p>
+                </div>
+            </div>
+            
+            <div id="loadingState" class="loading-state" style="display: none;">
+                <div style="text-align: center;">
+                    <div class="animate-spin" style="font-size: 48px; margin-bottom: 16px;">⚛️</div>
+                    <p style="font-size: 18px; color: #6b7280;">Generating molecular structure...</p>
+                </div>
+            </div>
+            
+            <div id="controlsInfo" class="controls-info" style="display: none;">
+                <p style="font-weight: 500; margin-bottom: 4px;">Controls:</p>
+                <p>• Drag to rotate</p>
+                <p>• Scroll to zoom</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let moleculeData = null;
+        let loading = false;
+        let error = '';
+        let autoRotate = false;
+        let showSuggestions = false;
+        let debugMode = false;
+        let scene, renderer, camera, frameId;
+        let rotationSpeed = 0.01;
+        
+        // Suggested molecules
+        const suggestedMolecules = [
+            { name: 'water', formula: 'H₂O' },
+            { name: 'ammonia', formula: 'NH₃' },
+            { name: 'methane', formula: 'CH₄' },
+            { name: 'ethylene', formula: 'C₂H₄' },
+            { name: 'carbon dioxide', formula: 'CO₂' }
+        ];
+        
+        // DOM elements
+        const elements = {
+            moleculeInput: document.getElementById('moleculeInput'),
+            submitBtn: document.getElementById('submitBtn'),
+            debugToggle: document.getElementById('debugToggle'),
+            normalMode: document.getElementById('normalMode'),
+            debugMode: document.getElementById('debugMode'),
+            debugJson: document.getElementById('debugJson'),
+            debugSubmit: document.getElementById('debugSubmit'),
+            debugClear: document.getElementById('debugClear'),
+            suggestions: document.getElementById('suggestions'),
+            error: document.getElementById('error'),
+            moleculeInfo: document.getElementById('moleculeInfo'),
+            viewer: document.getElementById('viewer'),
+            emptyState: document.getElementById('emptyState'),
+            loadingState: document.getElementById('loadingState'),
+            controlsInfo: document.getElementById('controlsInfo')
+        };
+        
+        // Initialize Three.js scene
+        function initializeScene() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf8f9fa);
+            
+            camera = new THREE.PerspectiveCamera(
+                75,
+                elements.viewer.clientWidth / elements.viewer.clientHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(0, 0, 10);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(elements.viewer.clientWidth, elements.viewer.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // Lighting setup
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 5, 5);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+            
+            elements.viewer.appendChild(renderer.domElement);
+            
+            // Mouse controls
+            let mouseDown = false;
+            let mouseX = 0;
+            let mouseY = 0;
+            
+            const onMouseDown = (event) => {
+                mouseDown = true;
+                mouseX = event.clientX;
+                mouseY = event.clientY;
+                autoRotate = false;
+            };
+            
+            const onMouseUp = () => {
+                mouseDown = false;
+            };
+            
+            const onMouseMove = (event) => {
+                if (!mouseDown) return;
+                
+                const deltaX = event.clientX - mouseX;
+                const deltaY = event.clientY - mouseY;
+                
+                if (scene) {
+                    scene.rotation.y += deltaX * 0.01;
+                    scene.rotation.x += deltaY * 0.01;
+                }
+                
+                mouseX = event.clientX;
+                mouseY = event.clientY;
+            };
+            
+            const onWheel = (event) => {
+                camera.position.z += event.deltaY * 0.01;
+                camera.position.z = Math.max(2, Math.min(50, camera.position.z));
+            };
+            
+            renderer.domElement.addEventListener('mousedown', onMouseDown);
+            renderer.domElement.addEventListener('mouseup', onMouseUp);
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            renderer.domElement.addEventListener('wheel', onWheel);
+            
+            // Animation loop
+            const animate = () => {
+                frameId = requestAnimationFrame(animate);
+                
+                if (autoRotate && scene) {
+                    scene.rotation.y += rotationSpeed;
+                }
+                
+                renderer.render(scene, camera);
+            };
+            animate();
+        }
+        
+        // Clear scene
+        function clearScene() {
+            if (!scene) return;
+            
+            const objectsToRemove = [];
+            scene.traverse((child) => {
+                if (child.isMesh && child.userData.isAtomOrBond) {
+                    objectsToRemove.push(child);
+                }
+            });
+            
+            objectsToRemove.forEach((obj) => {
+                scene.remove(obj);
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) obj.material.dispose();
+            });
+        }
+        
+        // Render molecule
+        function renderMolecule(data) {
+            if (!scene) return;
+            
+            clearScene();
+            
+            // Atom colors
+            const atomColors = {
+                'H': 0xffffff,  // White
+                'C': 0x404040,  // Dark gray
+                'N': 0x3050f8,  // Blue
+                'O': 0xff0d0d,  // Red
+                'P': 0xff8000,  // Orange
+                'S': 0xffff30,  // Yellow
+                'Cl': 0x1ff01f, // Green
+                'F': 0x90e050,  // Light green
+                'Br': 0xa62929, // Brown
+                'I': 0x940094,  // Purple
+                'default': 0x808080 // Gray
+            };
+            
+            // Render atoms
+            data.atoms.forEach((atom) => {
+                const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+                const color = atomColors[atom.element] || atomColors.default;
+                const material = new THREE.MeshPhongMaterial({ color });
+                const sphere = new THREE.Mesh(geometry, material);
+                
+                sphere.position.set(atom.x, atom.y, atom.z);
+                sphere.userData.isAtomOrBond = true;
+                sphere.castShadow = true;
+                sphere.receiveShadow = true;
+                
+                scene.add(sphere);
+            });
+            
+            // Render bonds
+            data.bonds.forEach((bond) => {
+                const atom1 = data.atoms[bond.atom1];
+                const atom2 = data.atoms[bond.atom2];
+                
+                const start = new THREE.Vector3(atom1.x, atom1.y, atom1.z);
+                const end = new THREE.Vector3(atom2.x, atom2.y, atom2.z);
+                const direction = new THREE.Vector3().subVectors(end, start);
+                const distance = direction.length();
+                
+                const geometry = new THREE.CylinderGeometry(0.1, 0.1, distance, 8);
+                const material = new THREE.MeshPhongMaterial({ color: 0x666666 });
+                const cylinder = new THREE.Mesh(geometry, material);
+                
+                cylinder.position.copy(start).add(direction.multiplyScalar(0.5));
+                cylinder.lookAt(end);
+                cylinder.rotateX(Math.PI / 2);
+                cylinder.userData.isAtomOrBond = true;
+                cylinder.castShadow = true;
+                cylinder.receiveShadow = true;
+                
+                scene.add(cylinder);
+            });
+            
+            // Center the molecule
+            const box = new THREE.Box3().setFromObject(scene);
+            const center = box.getCenter(new THREE.Vector3());
+            scene.position.sub(center);
+            
+            autoRotate = true;
+        }
+        
+        // Fetch molecule data (mock function - replace with real API)
+        async function fetchMoleculeData(name) {
+            // This is a mock function. In a real implementation, you would call an API
+            // For now, return some sample data for common molecules
+            const mockData = {
+                'water': {
+                    formula: 'H₂O',
+                    atoms: [
+                        { element: 'O', x: 0, y: 0, z: 0 },
+                        { element: 'H', x: 0.96, y: 0, z: 0 },
+                        { element: 'H', x: -0.24, y: 0.93, z: 0 }
+                    ],
+                    bonds: [
+                        { atom1: 0, atom2: 1, order: 1 },
+                        { atom1: 0, atom2: 2, order: 1 }
+                    ]
+                },
+                'methane': {
+                    formula: 'CH₄',
+                    atoms: [
+                        { element: 'C', x: 0, y: 0, z: 0 },
+                        { element: 'H', x: 1.09, y: 0, z: 0 },
+                        { element: 'H', x: -0.36, y: 1.03, z: 0 },
+                        { element: 'H', x: -0.36, y: -0.51, z: 0.89 },
+                        { element: 'H', x: -0.36, y: -0.51, z: -0.89 }
+                    ],
+                    bonds: [
+                        { atom1: 0, atom2: 1, order: 1 },
+                        { atom1: 0, atom2: 2, order: 1 },
+                        { atom1: 0, atom2: 3, order: 1 },
+                        { atom1: 0, atom2: 4, order: 1 }
+                    ]
+                },
+                'ammonia': {
+                    formula: 'NH₃',
+                    atoms: [
+                        { element: 'N', x: 0, y: 0, z: 0 },
+                        { element: 'H', x: 0.94, y: 0, z: 0 },
+                        { element: 'H', x: -0.47, y: 0.81, z: 0 },
+                        { element: 'H', x: -0.47, y: -0.40, z: 0.70 }
+                    ],
+                    bonds: [
+                        { atom1: 0, atom2: 1, order: 1 },
+                        { atom1: 0, atom2: 2, order: 1 },
+                        { atom1: 0, atom2: 3, order: 1 }
+                    ]
+                }
+            };
+            
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    const data = mockData[name.toLowerCase()];
+                    if (data) {
+                        resolve(data);
+                    } else {
+                        reject(new Error(`Molecule "${name}" not found in database`));
+                    }
+                }, 1000); // Simulate API delay
+            });
+        }
+        
+        // Handle form submission
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const name = elements.moleculeInput.value.trim();
+            if (!name) return;
+            
+            setLoading(true);
+            setError('');
+            
+            try {
+                const data = await fetchMoleculeData(name);
+                setMoleculeData(data);
+                renderMolecule(data);
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        // Handle debug submission
+        function handleDebugSubmit() {
+            const jsonText = elements.debugJson.value.trim();
+            if (!jsonText) return;
+            
+            try {
+                const data = JSON.parse(jsonText);
+                setMoleculeData(data);
+                renderMolecule(data);
+                setError('');
+            } catch (err) {
+                setError('Invalid JSON format: ' + err.message);
+            }
+        }
+        
+        // State setters
+        function setLoading(isLoading) {
+            loading = isLoading;
+            elements.loadingState.style.display = isLoading ? 'flex' : 'none';
+            elements.submitBtn.disabled = isLoading;
+        }
+        
+        function setError(errorMessage) {
+            error = errorMessage;
+            elements.error.style.display = errorMessage ? 'block' : 'none';
+            elements.error.textContent = errorMessage;
+        }
+        
+        function setMoleculeData(data) {
+            moleculeData = data;
+            elements.emptyState.style.display = data ? 'none' : 'flex';
+            elements.controlsInfo.style.display = data ? 'block' : 'none';
+            
+            if (data) {
+                elements.moleculeInfo.style.display = 'block';
+                elements.moleculeInfo.innerHTML = `
+                    <strong>Formula:</strong> ${data.formula} • 
+                    <strong>Atoms:</strong> ${data.atoms.length} • 
+                    <strong>Bonds:</strong> ${data.bonds.length}
+                `;
+            } else {
+                elements.moleculeInfo.style.display = 'none';
+            }
+        }
+        
+        // Toggle debug mode
+        function toggleDebugMode() {
+            debugMode = !debugMode;
+            elements.normalMode.style.display = debugMode ? 'none' : 'block';
+            elements.debugMode.style.display = debugMode ? 'block' : 'none';
+            elements.debugToggle.textContent = debugMode ? 'Exit Debug Mode' : 'Toggle Debug Mode';
+        }
+        
+        // Show/hide suggestions
+        function showSuggestionsDropdown() {
+            const suggestionsHtml = suggestedMolecules.map(mol => `
+                <button class="suggestion-item" data-name="${mol.name}">
+                    <span style="text-transform: capitalize; color: #1f2937;">${mol.name}</span>
+                    <span style="font-size: 12px; color: #6b7280;">${mol.formula}</span>
+                </button>
+            `).join('');
+            
+            elements.suggestions.innerHTML = `
+                <div style="padding: 8px 16px; font-size: 12px; color: #6b7280; font-weight: 500;">
+                    Suggested molecules:
+                </div>
+                ${suggestionsHtml}
+            `;
+            
+            elements.suggestions.style.display = 'block';
+            
+            // Add click handlers
+            elements.suggestions.querySelectorAll('.suggestion-item').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const name = btn.dataset.name;
+                    elements.moleculeInput.value = name;
+                    elements.suggestions.style.display = 'none';
+                    handleSubmit(new Event('submit'));
+                });
+            });
+        }
+        
+        // Event listeners
+        elements.submitBtn.addEventListener('click', handleSubmit);
+        elements.debugToggle.addEventListener('click', toggleDebugMode);
+        elements.debugSubmit.addEventListener('click', handleDebugSubmit);
+        elements.debugClear.addEventListener('click', () => {
+            elements.debugJson.value = '';
+        });
+        
+        elements.moleculeInput.addEventListener('focus', showSuggestionsDropdown);
+        elements.moleculeInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                elements.suggestions.style.display = 'none';
+            }, 200);
+        });
+        
+        elements.moleculeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleSubmit(e);
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (camera && renderer) {
+                camera.aspect = elements.viewer.clientWidth / elements.viewer.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(elements.viewer.clientWidth, elements.viewer.clientHeight);
+            }
+        });
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeScene();
+        });
+    </script>
+</body>
+</html>
