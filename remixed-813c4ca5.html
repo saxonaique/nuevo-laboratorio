@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Avanzado de Formación Galáctica: DIG vs. ΛCDM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e0f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px;
+            background: rgba(26, 26, 46, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 200, 255, 0.1);
+            border: 1px solid rgba(138, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            color: #8affff;
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            text-shadow: 0 0 20px rgba(138, 255, 255, 0.5);
+        }
+
+        .theory-explanation {
+            background: rgba(13, 13, 26, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #8affff;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+        }
+
+        .control-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 123, 255, 0.5);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        .simulation-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .simulation-panel {
+            background: rgba(26, 26, 46, 0.9);
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid rgba(138, 255, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .simulation-panel:hover {
+            border-color: rgba(138, 255, 255, 0.6);
+            box-shadow: 0 15px 40px rgba(138, 255, 255, 0.1);
+        }
+
+        .panel-title {
+            color: #8affff;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(138, 255, 255, 0.3);
+        }
+
+        .canvas-container {
+            position: relative;
+            margin: 20px 0;
+        }
+
+        canvas {
+            width: 100%;
+            height: 400px;
+            background: radial-gradient(circle, #000011 0%, #000000 100%);
+            border: 2px solid rgba(138, 255, 255, 0.4);
+            border-radius: 10px;
+            box-shadow: inset 0 0 20px rgba(138, 255, 255, 0.1);
+        }
+
+        .info-panel {
+            background: rgba(13, 13, 26, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(74, 74, 110, 0.5);
+            margin-top: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(74, 74, 110, 0.2);
+        }
+
+        .info-label {
+            color: #8affff;
+            font-weight: 600;
+        }
+
+        .info-value {
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
+        }
+
+        .time-control {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .time-slider {
+            width: 200px;
+            height: 8px;
+            background: rgba(138, 255, 255, 0.2);
+            border-radius: 4px;
+            outline: none;
+            appearance: none;
+        }
+
+        .time-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #8affff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .comparison-stats {
+            background: rgba(26, 26, 46, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 30px 0;
+            border: 1px solid rgba(138, 255, 255, 0.2);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(13, 13, 26, 0.5);
+            border-radius: 8px;
+        }
+
+        .progress-bar {
+            width: 200px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8affff, #00ff88);
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .simulation-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌌 Simulador de Formación Galáctica Avanzado</h1>
+            <div class="theory-explanation">
+                <p><strong>Teoría de la Dualidad Información-Gravedad (DIG):</strong> 
+                En el universo temprano, la alta densidad de información cuántica genera una amplificación gravitacional mejorada que acelera la formación de estructuras masivas. La evolución sigue una escala de (1+z)^0.31, explicando las galaxias "imposibles" observadas por el JWST.</p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn" id="startBtn">▶ Iniciar Simulación</button>
+            <button class="control-btn" id="pauseBtn">⏸ Pausar</button>
+            <button class="control-btn" id="resetBtn">↻ Reiniciar</button>
+            <button class="control-btn" id="speedBtn">⚡ Velocidad x2</button>
+        </div>
+
+        <div class="time-control">
+            <label for="timeSlider" style="color: #8affff;">Tiempo Cósmico:</label>
+            <input type="range" id="timeSlider" class="time-slider" min="0" max="100" value="0">
+            <span id="cosmicTime" style="color: #ffffff;">z = 15.0</span>
+        </div>
+
+        <div class="simulation-grid">
+            <div class="simulation-panel">
+                <h2 class="panel-title">Teoría DIG (Información-Gravedad)</h2>
+                <div class="canvas-container">
+                    <canvas id="digCanvas" width="600" height="400"></canvas>
+                </div>
+                <div class="info-panel">
+                    <div class="info-row">
+                        <span class="info-label">Corrimiento al rojo (z):</span>
+                        <span class="info-value" id="digRedshift">15.00</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Masa Galáctica:</span>
+                        <span class="info-value" id="digMass">0 M☉</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Densidad de Información:</span>
+                        <span class="info-value" id="digDensity">Muy Alta</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Tasa de Formación:</span>
+                        <span class="info-value" id="digRate">0 M☉/Gyr</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="simulation-panel">
+                <h2 class="panel-title">Modelo Estándar (ΛCDM)</h2>
+                <div class="canvas-container">
+                    <canvas id="lcdmCanvas" width="600" height="400"></canvas>
+                </div>
+                <div class="info-panel">
+                    <div class="info-row">
+                        <span class="info-label">Corrimiento al rojo (z):</span>
+                        <span class="info-value" id="lcdmRedshift">15.00</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Masa Galáctica:</span>
+                        <span class="info-value" id="lcdmMass">0 M☉</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Materia Oscura:</span>
+                        <span class="info-value" id="lcdmDarkMatter">Estándar</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Tasa de Formación:</span>
+                        <span class="info-value" id="lcdmRate">0 M☉/Gyr</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="comparison-stats">
+            <h3 style="color: #8affff; text-align: center; margin-bottom: 20px;">Comparación de Rendimiento</h3>
+            <div class="stat-row">
+                <span>Velocidad de Formación (DIG vs ΛCDM):</span>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="speedComparison" style="width: 0%"></div>
+                </div>
+                <span id="speedRatio">1.0x</span>
+            </div>
+            <div class="stat-row">
+                <span>Masa Total Acumulada (DIG vs ΛCDM):</span>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="massComparison" style="width: 0%"></div>
+                </div>
+                <span id="massRatio">1.0x</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas and context references
+        const digCanvas = document.getElementById('digCanvas');
+        const digCtx = digCanvas.getContext('2d');
+        const lcdmCanvas = document.getElementById('lcdmCanvas');
+        const lcdmCtx = lcdmCanvas.getContext('2d');
+
+        // UI elements
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const speedBtn = document.getElementById('speedBtn');
+        const timeSlider = document.getElementById('timeSlider');
+        const cosmicTime = document.getElementById('cosmicTime');
+
+        // Simulation parameters
+        const NUM_PARTICLES = 300;
+        const CANVAS_WIDTH = 600;
+        const CANVAS_HEIGHT = 400;
+        const CENTER_X = CANVAS_WIDTH / 2;
+        const CENTER_Y = CANVAS_HEIGHT / 2;
+
+        // Enhanced physics parameters
+        const GRAVITY_DIG_BASE = 0.25;
+        const GRAVITY_LCDM_BASE = 0.02;
+        const INFORMATION_DENSITY_FACTOR = 2.5;
+        const REDSHIFT_EVOLUTION_RATE = 0.015;
+
+        // Simulation state
+        let digParticles = [];
+        let lcdmParticles = [];
+        let digMass = 0;
+        let lcdmMass = 0;
+        let digFormationRate = 0;
+        let lcdmFormationRate = 0;
+        let redshift = 15.0;
+        let isRunning = false;
+        let animationId = null;
+        let speedMultiplier = 1;
+        let frameCount = 0;
+
+        // Enhanced particle class
+        class Particle {
+            constructor(x, y, type) {
+                this.x = x || Math.random() * CANVAS_WIDTH;
+                this.y = y || Math.random() * CANVAS_HEIGHT;
+                this.vx = (Math.random() - 0.5) * 0.3;
+                this.vy = (Math.random() - 0.5) * 0.3;
+                this.mass = 1 + Math.random() * 2;
+                this.radius = Math.sqrt(this.mass) * 0.8;
+                this.type = type;
+                this.age = 0;
+                this.captured = false;
+                
+                // Color based on type and properties
+                this.color = this.type === 'dig' ? 
+                    `rgba(138, 255, 255, ${0.6 + Math.random() * 0.4})` :
+                    `rgba(255, 255, 255, ${0.4 + Math.random() * 0.3})`;
+            }
+
+            update(gravity, centerX, centerY) {
+                if (this.captured) return;
+
+                const dx = centerX - this.x;
+                const dy = centerY - this.y;
+                const distSq = dx * dx + dy * dy;
+                const dist = Math.sqrt(distSq);
+
+                if (dist > 1) {
+                    // Enhanced gravitational calculation
+                    const baseForce = gravity * this.mass / (distSq + 10);
+                    const informationBoost = this.type === 'dig' ? 
+                        INFORMATION_DENSITY_FACTOR * Math.pow(1 + redshift, 0.31) : 1;
+                    
+                    const force = baseForce * informationBoost;
+                    
+                    this.vx += force * dx / dist;
+                    this.vy += force * dy / dist;
+                    
+                    // Apply damping
+                    this.vx *= 0.99;
+                    this.vy *= 0.99;
+                }
+
+                this.x += this.vx * speedMultiplier;
+                this.y += this.vy * speedMultiplier;
+                this.age += speedMultiplier;
+
+                // Check for capture
+                const captureRadius = 15 + Math.sqrt(this.type === 'dig' ? digMass : lcdmMass) * 2;
+                if (dist < captureRadius) {
+                    this.captured = true;
+                    return true;
+                }
+                return false;
+            }
+
+            draw(ctx) {
+                if (this.captured) return;
+
+                ctx.save();
+                ctx.globalAlpha = Math.min(1, this.age / 100 + 0.3);
+                
+                // Draw particle with glow effect
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                
+                // Add glow for DIG particles
+                if (this.type === 'dig') {
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = '#8affff';
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+        }
+
+        // Initialize simulation
+        function init() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+
+            digParticles = [];
+            lcdmParticles = [];
+            digMass = 0;
+            lcdmMass = 0;
+            digFormationRate = 0;
+            lcdmFormationRate = 0;
+            redshift = 15.0;
+            isRunning = false;
+            frameCount = 0;
+
+            // Create particles with same initial conditions
+            for (let i = 0; i < NUM_PARTICLES; i++) {
+                const x = Math.random() * CANVAS_WIDTH;
+                const y = Math.random() * CANVAS_HEIGHT;
+                
+                digParticles.push(new Particle(x, y, 'dig'));
+                lcdmParticles.push(new Particle(x, y, 'lcdm'));
+            }
+
+            updateUI();
+            draw();
+        }
+
+        // Main update loop
+        function update() {
+            if (!isRunning) return;
+
+            frameCount++;
+            const lastDigMass = digMass;
+            const lastLcdmMass = lcdmMass;
+
+            // Update DIG particles
+            for (let i = digParticles.length - 1; i >= 0; i--) {
+                const particle = digParticles[i];
+                if (particle.update(GRAVITY_DIG_BASE, CENTER_X, CENTER_Y)) {
+                    digParticles.splice(i, 1);
+                    digMass += particle.mass;
+                }
+            }
+
+            // Update ΛCDM particles
+            for (let i = lcdmParticles.length - 1; i >= 0; i--) {
+                const particle = lcdmParticles[i];
+                if (particle.update(GRAVITY_LCDM_BASE, CENTER_X, CENTER_Y)) {
+                    lcdmParticles.splice(i, 1);
+                    lcdmMass += particle.mass;
+                }
+            }
+
+            // Calculate formation rates
+            if (frameCount % 10 === 0) {
+                digFormationRate = (digMass - lastDigMass) * 10;
+                lcdmFormationRate = (lcdmMass - lastLcdmMass) * 10;
+            }
+
+            // Update redshift
+            if (redshift > 0.5) {
+                redshift -= REDSHIFT_EVOLUTION_RATE * speedMultiplier;
+            }
+
+            // Update time slider
+            timeSlider.value = ((15 - redshift) / 14.5) * 100;
+
+            updateUI();
+            draw();
+
+            animationId = requestAnimationFrame(update);
+        }
+
+        // Drawing functions
+        function draw() {
+            // Clear canvases
+            digCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            lcdmCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            // Draw background effects
+            drawBackground(digCtx);
+            drawBackground(lcdmCtx);
+
+            // Draw particles
+            digParticles.forEach(p => p.draw(digCtx));
+            lcdmParticles.forEach(p => p.draw(lcdmCtx));
+
+            // Draw galaxy cores
+            drawGalaxyCore(digCtx, digMass, 'dig');
+            drawGalaxyCore(lcdmCtx, lcdmMass, 'lcdm');
+
+            // Draw information field visualization for DIG
+            if (redshift > 5) {
+                drawInformationField(digCtx);
+            }
+        }
+
+        function drawBackground(ctx) {
+            // Draw distant stars
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            for (let i = 0; i < 50; i++) {
+                const x = Math.random() * CANVAS_WIDTH;
+                const y = Math.random() * CANVAS_HEIGHT;
+                ctx.beginPath();
+                ctx.arc(x, y, 0.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawGalaxyCore(ctx, mass, type) {
+            const radius = 10 + Math.sqrt(mass) * 3;
+            
+            // Create gradient
+            const gradient = ctx.createRadialGradient(CENTER_X, CENTER_Y, 0, CENTER_X, CENTER_Y, radius);
+            
+            if (type === 'dig') {
+                gradient.addColorStop(0, 'rgba(138, 255, 255, 1)');
+                gradient.addColorStop(0.3, 'rgba(138, 255, 255, 0.8)');
+                gradient.addColorStop(0.7, 'rgba(138, 255, 255, 0.3)');
+                gradient.addColorStop(1, 'rgba(138, 255, 255, 0)');
+            } else {
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.6)');
+                gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.2)');
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            }
+
+            ctx.beginPath();
+            ctx.arc(CENTER_X, CENTER_Y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Draw core
+            ctx.beginPath();
+            ctx.arc(CENTER_X, CENTER_Y, Math.min(radius * 0.3, 8), 0, Math.PI * 2);
+            ctx.fillStyle = type === 'dig' ? '#8affff' : '#ffffff';
+            ctx.fill();
+        }
+
+        function drawInformationField(ctx) {
+            ctx.save();
+            ctx.globalAlpha = 0.1;
+            
+            // Draw information density visualization
+            const fieldSize = 20;
+            for (let x = 0; x < CANVAS_WIDTH; x += fieldSize) {
+                for (let y = 0; y < CANVAS_HEIGHT; y += fieldSize) {
+                    const intensity = Math.random() * redshift / 15;
+                    ctx.fillStyle = `rgba(138, 255, 255, ${intensity})`;
+                    ctx.fillRect(x, y, fieldSize, fieldSize);
+                }
+            }
+            
+            ctx.restore();
+        }
+
+        // UI update functions
+        function updateUI() {
+            // Update redshift display
+            document.getElementById('digRedshift').textContent = redshift.toFixed(2);
+            document.getElementById('lcdmRedshift').textContent = redshift.toFixed(2);
+            cosmicTime.textContent = `z = ${redshift.toFixed(1)}`;
+
+            // Update mass display
+            document.getElementById('digMass').textContent = `${(digMass * 1e9).toFixed(1)} M☉`;
+            document.getElementById('lcdmMass').textContent = `${(lcdmMass * 1e9).toFixed(1)} M☉`;
+
+            // Update formation rates
+            document.getElementById('digRate').textContent = `${(digFormationRate * 1e9).toFixed(1)} M☉/Gyr`;
+            document.getElementById('lcdmRate').textContent = `${(lcdmFormationRate * 1e9).toFixed(1)} M☉/Gyr`;
+
+            // Update information density
+            let densityText = "Muy Alta";
+            if (redshift < 10) densityText = "Alta";
+            if (redshift < 6) densityText = "Moderada";
+            if (redshift < 3) densityText = "Baja";
+            document.getElementById('digDensity').textContent = densityText;
+
+            // Update comparison statistics
+            const speedRatio = digFormationRate > 0 ? (digFormationRate / Math.max(lcdmFormationRate, 0.1)) : 1;
+            const massRatio = lcdmMass > 0 ? (digMass / lcdmMass) : 1;
+            
+            document.getElementById('speedRatio').textContent = `${speedRatio.toFixed(1)}x`;
+            document.getElementById('massRatio').textContent = `${massRatio.toFixed(1)}x`;
+            
+            document.getElementById('speedComparison').style.width = `${Math.min(speedRatio * 10, 100)}%`;
+            document.getElementById('massComparison').style.width = `${Math.min(massRatio * 20, 100)}%`;
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', () => {
+            isRunning = true;
+            update();
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            isRunning = false;
+        });
+
+        resetBtn.addEventListener('click', () => {
+            init();
+        });
+
+        speedBtn.addEventListener('click', () => {
+            speedMultiplier = speedMultiplier === 1 ? 2 : speedMultiplier === 2 ? 4 : 1;
+            speedBtn.textContent = `⚡ Velocidad x${speedMultiplier}`;
+        });
+
+        timeSlider.addEventListener('input', (e) => {
+            const progress = e.target.value / 100;
+            redshift = 15 - (progress * 14.5);
+            updateUI();
+        });
+
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

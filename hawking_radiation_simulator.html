@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Motor N - Radiación de Hawking DIG</title>
+  <style>
+    body {
+      background: #000011;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      text-align: center;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      justify-content: flex-start;
+      overflow-y: auto;
+    }
+    .container {
+        max-width: 800px;
+        width: 100%;
+        padding: 1rem;
+        box-sizing: border-box;
+    }
+    canvas {
+      border: 2px solid #4c1d95;
+      margin-bottom: 1rem;
+      max-width: 100%;
+      height: auto;
+      background-color: #000022;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(76, 29, 149, 0.3);
+    }
+    button {
+      margin: 0.4rem;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      border: none;
+      background-color: #7c3aed;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+    button:hover {
+      background-color: #5b21b6;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
+    }
+    button.active {
+        background-color: #dc2626;
+        box-shadow: 0 2px 6px rgba(220, 38, 38, 0.4);
+    }
+    button.hawking-active {
+        background-color: #f97316;
+        box-shadow: 0 2px 6px rgba(249, 115, 22, 0.4);
+        animation: hawking-glow 2s infinite;
+    }
+    @keyframes hawking-glow {
+        0%, 100% { box-shadow: 0 2px 6px rgba(249, 115, 22, 0.4); }
+        50% { box-shadow: 0 6px 20px rgba(249, 115, 22, 0.8); }
+    }
+    .control-group {
+        margin-top: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+    }
+    .control-group label {
+        font-size: 0.95rem;
+        color: #a78bfa;
+    }
+    .control-group input[type="range"] {
+        width: 90%;
+        max-width: 400px;
+        -webkit-appearance: none;
+        height: 10px;
+        background: #4c1d95;
+        border-radius: 5px;
+        outline: none;
+        opacity: 0.8;
+    }
+    .control-group input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #7c3aed;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    .button-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    .hawking-info {
+        background: rgba(124, 58, 237, 0.1);
+        border: 1px solid #7c3aed;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 2rem;
+        text-align: left;
+        font-size: 0.9rem;
+    }
+    .hawking-info h3 {
+        color: #a78bfa;
+        margin-top: 0;
+    }
+    .info-display {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+    }
+    .info-panel {
+        background: rgba(124, 58, 237, 0.05);
+        padding: 0.8rem;
+        border-radius: 6px;
+        border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    .black-hole-indicator {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #000;
+        border: 2px solid #f97316;
+        display: inline-block;
+        margin-right: 8px;
+        animation: black-hole-spin 3s linear infinite;
+    }
+    @keyframes black-hole-spin {
+        from { border-color: #f97316; }
+        50% { border-color: #dc2626; }
+        to { border-color: #f97316; }
+    }
+    #inputData, #analysisData {
+        margin-top: 1rem;
+        font-size: 1rem;
+        color: #fbbf24;
+        font-weight: bold;
+        word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🕳️ Motor N - Radiación de Hawking</h1>
+    <p style="font-size: 0.9rem; color: #a78bfa; margin-bottom: 1rem;">
+      Simulador DIG de Información Cuántica en Agujeros Negros
+    </p>
+    
+    <canvas id="canvas" width="600" height="600"></canvas>
+    
+    <div class="button-grid">
+      <button onclick="createBlackHole()">🕳️ Crear Agujero Negro</button>
+      <button onclick="injectMatter()">⭐ Inyectar Materia</button>
+      <button onclick="injectInformation()">📡 Inyectar Información</button>
+      <button id="hawkingBtn" onclick="toggleHawkingRadiation()">🔥 Radiación Hawking (OFF)</button>
+      <button onclick="resetUniverse()">🌌 Reset Universo</button>
+    </div>
+    
+    <div class="button-grid" style="margin-top: 1rem;">
+      <button onclick="analyzeInformationEntropy()">🔍 Analizar Entropía Info</button>
+      <button onclick="detectQuantumCorrelations()">⚛️ Detectar Correlaciones</button>
+      <button onclick="generateCounterRadiation()">↩️ Generar Contra-Radiación</button>
+    </div>
+
+    <div class="control-group">
+      <label for="blackHoleMass">Masa Agujero Negro: <span id="massValue">1.00</span> (Masas Solares)</label>
+      <input type="range" id="blackHoleMass" min="0.1" max="10" step="0.1" value="1" oninput="updateBlackHoleMass(this.value)">
+    </div>
+
+    <div class="control-group">
+      <label for="hawkingIntensity">Intensidad Radiación Hawking: <span id="hawkingValue">1.00</span></label>
+      <input type="range" id="hawkingIntensity" min="0" max="2" step="0.1" value="1" oninput="updateHawkingIntensity(this.value)">
+    </div>
+
+    <div class="info-display">
+      <div class="info-panel">
+        <h4>🕳️ Estado del Agujero Negro</h4>
+        <p><span class="black-hole-indicator"></span>Masa: <span id="currentMass">0</span> M☉</p>
+        <p>📏 Radio Schwarzschild: <span id="schwarzschildRadius">0</span> km</p>
+        <p>🌡️ Temperatura Hawking: <span id="hawkingTemp">0</span> K</p>
+        <p>⏱️ Tiempo Evaporación: <span id="evaporationTime">∞</span> años</p>
+      </div>
+      <div class="info-panel">
+        <h4>📊 Análisis DIG</h4>
+        <p>📈 Entropía Informacional: <span id="infoEntropy">0.000</span></p>
+        <p>🔗 Correlaciones Cuánticas: <span id="quantumCorr">0.000</span></p>
+        <p>💫 Información Conservada: <span id="infoConserved">100%</span></p>
+        <p>🌊 Coherencia Cuántica: <span id="coherenceLevel">0.000</span></p>
+      </div>
+    </div>
+
+    <div id="inputData"></div>
+    <div id="analysisData"></div>
+    
+    <div class="hawking-info">
+      <h3>🔬 Predicciones Teoría DIG para Radiación Hawking</h3>
+      <p><strong>Conservación de Información:</strong> La información no se destruye, se redistribuye en patrones cuánticos complejos.</p>
+      <p><strong>Correlaciones No-Locales:</strong> La radiación mantiene entrelazamiento cuántico con el interior del agujero negro.</p>
+      <p><strong>Estructura Emergente:</strong> Los patrones aparentemente aleatorios contienen la información original codificada.</p>
+      <p><strong>Contra-Radiación:</strong> Es posible generar ondas inversas que reconstruyan parcialmente la información perdida.</p>
+      <p><strong>Campo Informacional:</strong> El agujero negro genera un campo ρ_I(r,t) que se extiende más allá del horizonte de eventos.</p>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const dim = 100;
+    let cellSize = canvas.width / dim;
+    
+    // Estado del universo simulado
+    let field = [];
+    let blackHoles = [];
+    let particles = [];
+    let hawkingActive = false;
+    let blackHoleMass = 1.0;
+    let hawkingIntensity = 1.0;
+    let totalInformation = 0;
+    let animationId = null;
+
+    class BlackHole {
+      constructor(x, y, mass) {
+        this.x = x;
+        this.y = y;
+        this.mass = mass;
+        this.radius = this.calculateSchwarzschildRadius();
+        this.temperature = this.calculateHawkingTemperature();
+        this.informationContent = 0;
+      }
+      
+      calculateSchwarzschildRadius() {
+        // R_s = 2GM/c² (simplificado para visualización)
+        return Math.max(2, this.mass * 2);
+      }
+      
+      calculateHawkingTemperature() {
+        // T = ℏc³/(8πGMk) (inversamente proporcional a la masa)
+        return 1.0 / this.mass;
+      }
+      
+      evaporationTime() {
+        // Tiempo proporcional a M³
+        return Math.pow(this.mass, 3) * 1e10; // años
+      }
+    }
+
+    class Particle {
+      constructor(x, y, vx, vy, information) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.information = information;
+        this.age = 0;
+        this.isHawkingRadiation = false;
+      }
+      
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.age++;
+        
+        // Interacción con agujeros negros
+        blackHoles.forEach(bh => {
+          const dx = this.x - bh.x;
+          const dy = this.y - bh.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          
+          if (dist < bh.radius && !this.isHawkingRadiation) {
+            // Partícula absorbida
+            bh.informationContent += this.information;
+            bh.mass += 0.001; // Crecimiento del agujero negro
+            this.information = 0; // Información "perdida" temporalmente
+          }
+        });
+        
+        // Límites del canvas
+        if (this.x < 0 || this.x >= dim || this.y < 0 || this.y >= dim) {
+          this.vx *= -0.8;
+          this.vy *= -0.8;
+          this.x = Math.max(0, Math.min(dim-1, this.x));
+          this.y = Math.max(0, Math.min(dim-1, this.y));
+        }
+      }
+      
+      draw() {
+        const screenX = this.x * cellSize;
+        const screenY = this.y * cellSize;
+        
+        ctx.beginPath();
+        if (this.isHawkingRadiation) {
+          // Radiación Hawking en naranja
+          ctx.fillStyle = `hsl(30, 100%, ${50 + this.information * 30}%)`;
+          ctx.arc(screenX, screenY, 3, 0, 2 * Math.PI);
+        } else {
+          // Materia normal en blanco/azul
+          ctx.fillStyle = `hsl(200, 100%, ${50 + this.information * 20}%)`;
+          ctx.arc(screenX, screenY, 2, 0, 2 * Math.PI);
+        }
+        ctx.fill();
+      }
+    }
+
+    function initializeUniverse() {
+      field = Array(dim).fill().map(() => Array(dim).fill(0));
+      blackHoles = [];
+      particles = [];
+      totalInformation = 1000; // Información inicial del universo
+      updateDisplays();
+    }
+
+    function resizeCanvas() {
+      const containerWidth = canvas.parentElement.clientWidth;
+      canvas.width = Math.min(600, containerWidth - 32);
+      canvas.height = canvas.width;
+      cellSize = canvas.width / dim;
+    }
+
+    function drawField() {
+      // Dibuja el campo de fondo (vacío cuántico)
+      for (let r = 0; r < dim; r++) {
+        for (let c = 0; c < dim; c++) {
+          const intensity = field[r][c];
+          const alpha = Math.min(intensity * 0.1, 1);
+          ctx.fillStyle = `rgba(100, 50, 200, ${alpha})`;
+          ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+        }
+      }
+      
+      // Dibuja agujeros negros
+      blackHoles.forEach(bh => {
+        const screenX = bh.x * cellSize;
+        const screenY = bh.y * cellSize;
+        
+        // Horizonte de eventos
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, bh.radius * cellSize, 0, 2 * Math.PI);
+        ctx.fillStyle = '#000000';
+        ctx.fill();
+        
+        // Borde del agujero negro
+        ctx.strokeStyle = '#ff6600';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Disco de acreción
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, bh.radius * cellSize * 1.5, 0, 2 * Math.PI);
+        ctx.strokeStyle = `rgba(255, 102, 0, 0.3)`;
+        ctx.lineWidth = 4;
+        ctx.stroke();
+      });
+      
+      // Dibuja partículas
+      particles.forEach(p => p.draw());
+    }
+
+    function createBlackHole() {
+      const x = Math.random() * (dim - 20) + 10;
+      const y = Math.random() * (dim - 20) + 10;
+      const bh = new BlackHole(x, y, blackHoleMass);
+      blackHoles.push(bh);
+      
+      document.getElementById('inputData').textContent = 
+        `🕳️ Agujero negro creado: ${blackHoleMass} masas solares`;
+      updateDisplays();
+    }
+
+    function injectMatter() {
+      for (let i = 0; i < 10; i++) {
+        const particle = new Particle(
+          Math.random() * dim,
+          Math.random() * dim,
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2,
+          Math.random() * 2
+        );
+        particles.push(particle);
+        totalInformation += particle.information;
+      }
+      
+      document.getElementById('inputData').textContent = 
+        `⭐ Materia inyectada: 10 partículas con información`;
+    }
+
+    function injectInformation() {
+      // Inyecta información pura sin masa
+      for (let i = 0; i < 5; i++) {
+        const particle = new Particle(
+          Math.random() * dim,
+          Math.random() * dim,
+          (Math.random() - 0.5) * 4,
+          (Math.random() - 0.5) * 4,
+          3 + Math.random() * 2
+        );
+        particles.push(particle);
+        totalInformation += particle.information;
+      }
+      
+      document.getElementById('inputData').textContent = 
+        `📡 Información cuántica inyectada: 5 paquetes de alta densidad`;
+    }
+
+    function toggleHawkingRadiation() {
+      hawkingActive = !hawkingActive;
+      const btn = document.getElementById('hawkingBtn');
+      
+      if (hawkingActive) {
+        btn.textContent = '🔥 Radiación Hawking (ON)';
+        btn.classList.add('hawking-active');
+        document.getElementById('inputData').textContent = 
+          `🔥 Radiación Hawking activada - Liberando información cuántica`;
+      } else {
+        btn.textContent = '🔥 Radiación Hawking (OFF)';
+        btn.classList.remove('hawking-active');
+      }
+    }
+
+    function generateHawkingRadiation() {
+      if (!hawkingActive || blackHoles.length === 0) return;
+      
+      blackHoles.forEach(bh => {
+        if (Math.random() < bh.temperature * hawkingIntensity * 0.1) {
+          // Genera partícula de radiación Hawking
+          const angle = Math.random() * 2 * Math.PI;
+          const speed = 2 + Math.random() * 3;
+          const distance = bh.radius * 1.2;
+          
+          const particle = new Particle(
+            bh.x + Math.cos(angle) * distance,
+            bh.y + Math.sin(angle) * distance,
+            Math.cos(angle) * speed,
+            Math.sin(angle) * speed,
+            bh.informationContent > 0 ? Math.min(1, bh.informationContent * 0.1) : 0.1
+          );
+          
+          particle.isHawkingRadiation = true;
+          particles.push(particle);
+          
+          // Según DIG: información se conserva, solo se redistribuye
+          if (bh.informationContent > 0) {
+            bh.informationContent -= particle.information;
+          }
+          
+          // El agujero negro pierde masa muy lentamente
+          bh.mass -= 0.0001;
+          if (bh.mass < 0.1) bh.mass = 0.1;
+        }
+      });
+    }
+
+    function analyzeInformationEntropy() {
+      let totalInfo = particles.reduce((sum, p) => sum + p.information, 0);
+      let hawkingInfo = particles.filter(p => p.isHawkingRadiation)
+                               .reduce((sum, p) => sum + p.information, 0);
+      
+      let entropy = 0;
+      if (totalInfo > 0) {
+        particles.forEach(p => {
+          if (p.information > 0) {
+            const prob = p.information / totalInfo;
+            entropy -= prob * Math.log2(prob);
+          }
+        });
+      }
+      
+      document.getElementById('analysisData').textContent = 
+        `📊 Entropía calculada: ${entropy.toFixed(3)} | Info Hawking: ${hawkingInfo.toFixed(2)}`;
+      
+      updateDisplays();
+    }
+
+    function detectQuantumCorrelations() {
+      let correlations = 0;
+      let pairs = 0;
+      
+      // Busca correlaciones entre partículas de Hawking
+      const hawkingParticles = particles.filter(p => p.isHawkingRadiation);
+      
+      for (let i = 0; i < hawkingParticles.length; i++) {
+        for (let j = i + 1; j < hawkingParticles.length; j++) {
+          const p1 = hawkingParticles[i];
+          const p2 = hawkingParticles[j];
+          
+          // Correlación basada en información similar
+          const infoSimilarity = 1 - Math.abs(p1.information - p2.information);
+          correlations += infoSimilarity;
+          pairs++;
+        }
+      }
+      
+      const avgCorrelation = pairs > 0 ? correlations / pairs : 0;
+      
+      document.getElementById('analysisData').textContent = 
+        `⚛️ Correlaciones detectadas: ${avgCorrelation.toFixed(3)} (${pairs} pares analizados)`;
+    }
+
+    function generateCounterRadiation() {
+      if (blackHoles.length === 0) return;
+      
+      // Genera radiación "inversa" para recuperar información
+      blackHoles.forEach(bh => {
+        for (let i = 0; i < 3; i++) {
+          const angle = Math.random() * 2 * Math.PI;
+          const speed = -1 * (1 + Math.random()); // Velocidad hacia el agujero negro
+          
+          const particle = new Particle(
+            bh.x + Math.cos(angle) * bh.radius * 2,
+            bh.y + Math.sin(angle) * bh.radius * 2,
+            Math.cos(angle) * speed,
+            Math.sin(angle) * speed,
+            -0.5 // Información "negativa" (contra-entropía)
+          );
+          
+          particles.push(particle);
+        }
+      });
+      
+      document.getElementById('analysisData').textContent = 
+        `↩️ Contra-radiación generada - Intentando recuperar información perdida`;
+    }
+
+    function updateBlackHoleMass(value) {
+      blackHoleMass = parseFloat(value);
+      document.getElementById('massValue').textContent = blackHoleMass.toFixed(2);
+      
+      // Actualiza agujeros negros existentes
+      blackHoles.forEach(bh => {
+        bh.mass = blackHoleMass;
+        bh.radius = bh.calculateSchwarzschildRadius();
+        bh.temperature = bh.calculateHawkingTemperature();
+      });
+      
+      updateDisplays();
+    }
+
+    function updateHawkingIntensity(value) {
+      hawkingIntensity = parseFloat(value);
+      document.getElementById('hawkingValue').textContent = hawkingIntensity.toFixed(2);
+    }
+
+    function updateDisplays() {
+      if (blackHoles.length > 0) {
+        const bh = blackHoles[0];
+        document.getElementById('currentMass').textContent = bh.mass.toFixed(2);
+        document.getElementById('schwarzschildRadius').textContent = (bh.radius * 3).toFixed(0);
+        document.getElementById('hawkingTemp').textContent = (bh.temperature * 1e-7).toFixed(2);
+        document.getElementById('evaporationTime').textContent = 
+          bh.evaporationTime() > 1e15 ? '∞' : (bh.evaporationTime() / 1e9).toFixed(1) + 'B';
+      }
+      
+      // Análisis DIG
+      let totalInfo = particles.reduce((sum, p) => sum + p.information, 0);
+      let hawkingCount = particles.filter(p => p.isHawkingRadiation).length;
+      let coherence = hawkingCount > 0 ? Math.min(1, hawkingCount / 10) : 0;
+      
+      document.getElementById('infoEntropy').textContent = (totalInfo / 10).toFixed(3);
+      document.getElementById('quantumCorr').textContent = coherence.toFixed(3);
+      document.getElementById('infoConserved').textContent = 
+        ((totalInformation > 0 ? totalInfo / totalInformation : 1) * 100).toFixed(1) + '%';
+      document.getElementById('coherenceLevel').textContent = coherence.toFixed(3);
+    }
+
+    function resetUniverse() {
+      initializeUniverse();
+      hawkingActive = false;
+      document.getElementById('hawkingBtn').textContent = '🔥 Radiación Hawking (OFF)';
+      document.getElementById('hawkingBtn').classList.remove('hawking-active');
+      document.getElementById('inputData').textContent = '🌌 Universo reiniciado';
+      document.getElementById('analysisData').textContent = '';
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Actualiza física
+      particles.forEach(p => p.update());
+      particles = particles.filter(p => p.age < 1000); // Limpia partículas viejas
+      
+      generateHawkingRadiation();
+      drawField();
+      
+      animationId = requestAnimationFrame(animate);
+    }
+
+    // Inicialización
+    window.addEventListener('load', () => {
+      resizeCanvas();
+      initializeUniverse();
+      animate();
+    });
+    window.addEventListener('resize', resizeCanvas);
+  </script>
+</body>
+</html>
